@@ -10,6 +10,12 @@ Install the package using `yarn` or `npm`:
 yarn add react-shared-element-transition
 ```
 
+or
+
+```bash
+npm install --save react-shared-element-transition
+```
+
 ## Usage
 
 The API is meant to be simple to use with [React Router](https://github.com/remix-run/react-router). First wrap your routes in the `SharedElementContextProvider`. It will keep track of all of the mounted shared elements that will need to be transitioned. It will also transition them in response to a route change.

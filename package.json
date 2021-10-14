@@ -5,5 +5,9 @@
   "main": "index.ts",
   "repository": "https://github.com/amarcher/react-shared-element-transition",
   "author": "Andrew Archer <andrew.m.archer@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-router": "^5.2.1"
+  }
 }
