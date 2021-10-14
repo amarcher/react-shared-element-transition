@@ -1,0 +1,9 @@
+{
+  "name": "react-shared-element-transition",
+  "version": "1.0.0",
+  "description": "A declarative API to animate the transition of elements shared between pages across route transitions",
+  "main": "index.ts",
+  "repository": "https://github.com/amarcher/react-shared-element-transition",
+  "author": "Andrew Archer <andrew.m.archer@gmail.com>",
+  "license": "MIT"
+}
