@@ -7,7 +7,6 @@
   "author": "Andrew Archer <andrew.m.archer@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "react": "^17.0.2",
-    "react-router": "^5.2.1"
+    "react": "^17.0.2"
   }
 }

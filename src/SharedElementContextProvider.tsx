@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router';
 
 import {
   GHOST_LAYER_MASK_STYLE,
@@ -9,6 +8,7 @@ import {
 
 type Props = {
   children: React.ReactElement;
+  pathname: string;
 };
 
 export interface MountSharedElementInput {
@@ -83,8 +83,10 @@ function getKeyFrames(
 
 const TIMEOUT = 100;
 
-export default function ShareElementContextProvider({ children }: Props) {
-  const { pathname } = useLocation();
+export default function ShareElementContextProvider({
+  children,
+  pathname,
+}: Props) {
   const ghostLayerRef = useRef<HTMLDivElement>(null);
   const prevPathname = useRef<string | undefined>(pathname);
   const activePathname = useRef<string | undefined>(pathname);

@@ -1,13 +1,13 @@
 export const SHARED_ELEMENT_STYLE = {
-  position: 'fixed',
+  position: 'fixed' as React.CSSProperties['position'],
   contain: 'strict',
   willChange: 'transform',
   animationFillMode: 'both',
 };
 
 export const GHOST_LAYER_STYLE = {
-  pointerEvents: 'none',
-  position: 'fixed',
+  pointerEvents: 'none' as React.CSSProperties['pointerEvents'],
+  position: 'fixed' as React.CSSProperties['position'],
   top: 0,
   left: 0,
   right: 0,
@@ -18,8 +18,8 @@ export const GHOST_LAYER_STYLE = {
 };
 
 export const GHOST_LAYER_MASK_STYLE = {
-  pointerEvents: 'none',
-  position: 'fixed',
+  pointerEvents: 'none' as React.CSSProperties['pointerEvents'],
+  position: 'fixed' as React.CSSProperties['position'],
   top: 0,
   left: 0,
   right: 0,

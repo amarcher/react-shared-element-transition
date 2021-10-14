@@ -24,6 +24,7 @@ File: `App.tsx`
 
 ```tsx
 import React from 'react';
+import { useLocation } from 'react-router';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import { SharedElementContextProvider } from 'react-shared-element-transition';
 
@@ -31,9 +32,11 @@ import Things from './Things';
 import Main from './Main';
 import NotFound from './NotFound';
 
-export default function App() {
+function Routes() {
+  const { pathname } = useLocation();
+
   return (
-    <SharedElementContextProvider>
+    <SharedElementContextProvider pathname={pathname}>
       <Switch>
         <Route exact path="/" component={Things} />
         <Route path="/things" component={Things} />
@@ -42,6 +45,12 @@ export default function App() {
       </Switch>
     </SharedElementContextProvider>
   );
+}
+
+export default function App() => {
+  <BrowserRouter>
+    <Routes />
+  </BrowserRouter>
 }
 ```
 
