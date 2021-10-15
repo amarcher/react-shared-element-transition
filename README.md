@@ -112,5 +112,5 @@ That's it! You'll now see the element transition when the route changes.
 In the initial version of this package there are a few limitations:
 
 1. Page background is assumed to be white.
-2. Transition assumes the element is identical if it has the same id and uses the last element. There is no cross-fading.
+2. Transition assumes both elements sharing an id are identical (e.g. images with same `src`) and simply transforms the incoming element to fit the bounding box of the exiting element, then transitions it to the final position by removing the transform (using the [F.L.I.P. technique]()).
 3. Duration not customizable (yet) its value is 200ms.

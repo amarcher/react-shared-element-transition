@@ -16,6 +16,14 @@
   "license": "MIT",
   "dependencies": {},
   "sideEffects": false,
+  "keywords": [
+    "shared element transition",
+    "shared element animation",
+    "shared elements",
+    "react router shared element transition",
+    "react animation",
+    "react router animation"
+  ],
   "peerDependencies": {
     "react": "^17.0.0"
   },
