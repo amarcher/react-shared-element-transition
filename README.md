@@ -1,6 +1,14 @@
 ## react-shared-element-transition
 
-React Shared Element Transition is a declarative API to coordinate and execute the animation of elements shared between pages.
+React Shared Element Transition helps coordinate and execute animations of elements that appear on multiple pages in a single page app.
+
+## Example
+
+As seen on the [NFT website](https://normalfuckingthings.com):
+
+![Sample](https://github.com/amarcher/react-shared-element-transition/blob/master/sample.gif?raw=true)
+
+See [sample usage on repo](https://github.com/amarcher/nft).
 
 ## Installation
 
@@ -98,3 +106,11 @@ export default function Main({ match, location: { pathname } }: RouteComponentPr
 ```
 
 That's it! You'll now see the element transition when the route changes.
+
+## Limitations
+
+In the initial version of this package there are a few limitations:
+
+1. Page background is assumed to be white.
+2. Transition assumes the element is identical if it has the same id and uses the last element. There is no cross-fading.
+3. Duration not customizable (yet) its value is 200ms.

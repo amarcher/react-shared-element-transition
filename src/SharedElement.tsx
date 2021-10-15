@@ -1,8 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import useSharedElementContext from './useSharedElementContext';
 
-import './SharedElement.css';
-
 type Props = {
   children: React.ReactElement;
   id: string;

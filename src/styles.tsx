@@ -1,10 +1,3 @@
-export const SHARED_ELEMENT_STYLE = {
-  position: 'fixed' as React.CSSProperties['position'],
-  contain: 'strict',
-  willChange: 'transform',
-  animationFillMode: 'both',
-};
-
 export const GHOST_LAYER_STYLE = {
   pointerEvents: 'none' as React.CSSProperties['pointerEvents'],
   position: 'fixed' as React.CSSProperties['position'],

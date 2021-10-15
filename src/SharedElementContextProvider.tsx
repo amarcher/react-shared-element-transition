@@ -100,6 +100,10 @@ export default function ShareElementContextProvider({
   const attachElement = useCallback(
     ({ node, lastBoundingClientRect: last }: SharedElementToTransition) => {
       node.classList.add('SharedElement');
+      node.style.position = 'fixed';
+      node.style.contain = 'strict';
+      node.style.willChange = 'transform';
+      node.style.animationFillMode = 'both';
       node.style.top = `${last.top}px`;
       node.style.left = `${last.left}px`;
       node.style.height = `${last.height}px`;
@@ -278,12 +282,17 @@ export default function ShareElementContextProvider({
       <>
         {children}
         <div
+          className="GhostLayer__mask"
           style={{
             ...GHOST_LAYER_MASK_STYLE,
             ...(isTransitioning ? GHOST_LAYER_MASK_TRANSITIONING_STYLE : {}),
           }}
         />
-        <div style={GHOST_LAYER_STYLE} ref={ghostLayerRef} />
+        <div
+          className="GhostLayer"
+          style={GHOST_LAYER_STYLE}
+          ref={ghostLayerRef}
+        />
       </>
     </SharedElementContext.Provider>
   );
