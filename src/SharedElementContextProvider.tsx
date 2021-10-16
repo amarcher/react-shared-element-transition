@@ -1,10 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 
-import {
-  GHOST_LAYER_MASK_STYLE,
-  GHOST_LAYER_MASK_TRANSITIONING_STYLE,
-  GHOST_LAYER_STYLE,
-} from './styles';
+import { GHOST_LAYER_STYLE, DEFAULT_ANIMATION_OPTIONS, GHOST_LAYER_CLEAR_TIMEOUT, DEBOUNCE_TIMEOUT } from './constants';
+import { getKeyFrames, getNodeForTransition } from './utils';
 
 type Props = {
   children: React.ReactElement;
@@ -14,6 +11,7 @@ type Props = {
 export interface MountSharedElementInput {
   id: string;
   ref: HTMLDivElement;
+  animationOptions?: KeyframeAnimationOptions;
 }
 
 export interface SharedElement {
@@ -22,6 +20,7 @@ export interface SharedElement {
   firstBoundingClientRect?: DOMRect;
   lastBoundingClientRect?: DOMRect;
   animation?: Animation;
+  lastSeenAtPathname?: string;
 }
 
 export interface SharedElementToTransition extends SharedElement {
@@ -32,20 +31,16 @@ export interface SharedElementToTransition extends SharedElement {
 }
 
 export type SharedElementContextType = {
-  mountSharedElement: (
-    sharedElement: MountSharedElementInput,
-    pathname?: string
-  ) => void;
+  mountSharedElement: (sharedElement: MountSharedElementInput, pathname: string) => void;
   activePathname?: string;
   isTransitioning: boolean;
 };
 
-export const SharedElementContext =
-  React.createContext<SharedElementContextType>({
-    mountSharedElement() {},
-    isTransitioning: false,
-    activePathname: undefined,
-  });
+export const SharedElementContext = React.createContext<SharedElementContextType>({
+  mountSharedElement() {},
+  isTransitioning: false,
+  activePathname: undefined,
+});
 
 function isSharedElementToTransition(
   sharedElement: SharedElement | SharedElementToTransition
@@ -58,69 +53,17 @@ function isSharedElementToTransition(
   );
 }
 
-function getKeyFrames(
-  node: HTMLDivElement,
-  first: DOMRect,
-  last: DOMRect
-): KeyframeEffect {
-  const verticalTravelDistance = first.top - last.top;
-  const horizontalTravelDistance = first.left - last.left;
-  const scaleX = first.width / last.width;
-  const scaleY = first.height / last.height;
-  return new KeyframeEffect(
-    node,
-    [
-      {
-        transform: `matrix(${scaleX}, 0, 0, ${scaleY}, ${horizontalTravelDistance}, ${verticalTravelDistance})`,
-      },
-      { transform: 'none' },
-    ],
-    {
-      duration: 200,
-    }
-  );
-}
+export default function ShareElementContextProvider({ children, pathname }: Props) {
+  // Only require the polyfill on the client. If loaded on the server, a "document is not defined" error is thrown.
+  useEffect(() => {
+    require('web-animations-js');
+  }, []);
 
-const TIMEOUT = 100;
-
-export default function ShareElementContextProvider({
-  children,
-  pathname,
-}: Props) {
   const ghostLayerRef = useRef<HTMLDivElement>(null);
   const prevPathname = useRef<string | undefined>(pathname);
-  const activePathname = useRef<string | undefined>(pathname);
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>();
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  const [sharedElements, setSharedElements] = useState<
-    Record<string, SharedElement>
-  >({});
-
-  const attachElement = useCallback(
-    ({ node, lastBoundingClientRect: last }: SharedElementToTransition) => {
-      node.classList.add('SharedElement');
-      node.style.position = 'fixed';
-      node.style.contain = 'strict';
-      node.style.willChange = 'transform';
-      node.style.animationFillMode = 'both';
-      node.style.top = `${last.top}px`;
-      node.style.left = `${last.left}px`;
-      node.style.height = `${last.height}px`;
-      node.style.width = `${last.width}px`;
-      node.style.transformOrigin = 'top left';
-      ghostLayerRef.current?.appendChild(node);
-    },
-    [ghostLayerRef]
-  );
-
-  const runAnimation = useCallback(
-    async ({ animation }: SharedElementToTransition) => {
-      animation.play();
-      return animation.finished;
-    },
-    []
-  );
+  const [sharedElements, setSharedElements] = useState<Record<string, SharedElement>>({});
 
   const clearGhostLayer = useCallback(() => {
     if (!ghostLayerRef.current) return;
@@ -128,61 +71,65 @@ export default function ShareElementContextProvider({
     while (ghostLayerRef.current.firstChild) {
       ghostLayerRef.current.removeChild(ghostLayerRef.current.firstChild);
     }
+
+    ghostLayerRef.current.style.pointerEvents = 'none';
   }, [ghostLayerRef]);
 
-  const addOrUpdateSharedElement = useCallback(
-    ({ id, ref }: MountSharedElementInput) =>
+  const updateSharedElement = useCallback(
+    ({ id, ref, animationOptions }: MountSharedElementInput, lastSeenAtPathname: string) => {
       setSharedElements((prevSharedElements) => {
-        if (prevSharedElements[id]?.lastBoundingClientRect) {
-          // No-op
-          return prevSharedElements;
+        const lastBoundingClientRect = ref.getBoundingClientRect();
+        const node = getNodeForTransition(ref, lastBoundingClientRect);
+        const animation = node.animate(
+          getKeyFrames(prevSharedElements[id].firstBoundingClientRect!, lastBoundingClientRect),
+          { ...DEFAULT_ANIMATION_OPTIONS, ...animationOptions }
+        );
+        if (ghostLayerRef.current) {
+          ghostLayerRef.current.appendChild(node);
+          ghostLayerRef.current.style.pointerEvents = 'all';
         }
 
-        if (prevSharedElements[id]?.firstBoundingClientRect) {
-          // Update with final position
-          const lastBoundingClientRect = ref.getBoundingClientRect();
-          const node = ref.cloneNode(true) as HTMLDivElement;
-          const animation = new Animation(
-            getKeyFrames(
-              node,
-              prevSharedElements[id].firstBoundingClientRect!,
-              lastBoundingClientRect
-            )
-          );
-          const element = {
-            ...prevSharedElements[id],
-            lastBoundingClientRect,
-            node,
-            animation,
-          } as SharedElementToTransition;
-          attachElement(element);
-          return {
-            ...prevSharedElements,
-            [id]: element,
-          };
-        }
+        const element = {
+          ...prevSharedElements[id],
+          lastBoundingClientRect,
+          node,
+          animation,
+          lastSeenAtPathname,
+        } as SharedElementToTransition;
 
-        // Add
+        return {
+          ...prevSharedElements,
+          [id]: element,
+        };
+      });
+    },
+    []
+  );
+
+  const addSharedElement = useCallback(
+    ({ id, ref }: MountSharedElementInput, lastSeenAtPathname: string) =>
+      setSharedElements((prevSharedElements) => {
         return {
           ...prevSharedElements,
           [id]: {
+            lastSeenAtPathname,
             firstBoundingClientRect: ref.getBoundingClientRect(),
             node: ref,
             id,
           },
         };
       }),
-    [attachElement]
+    []
   );
 
+  // Recalculate the bounding boxes of all shared elements on resize or scroll
   const onResizeOrScroll = useCallback(() => {
     setSharedElements((prevSharedElements) => {
       return Object.keys(prevSharedElements).reduce((sharedElements, id) => {
         sharedElements[id] = {
           ...prevSharedElements[id],
           firstBoundingClientRect:
-            prevSharedElements[id].node?.getBoundingClientRect() ||
-            prevSharedElements[id].firstBoundingClientRect,
+            prevSharedElements[id].node?.getBoundingClientRect() || prevSharedElements[id].firstBoundingClientRect,
         };
         return sharedElements;
       }, {} as Record<string, SharedElement>);
@@ -191,7 +138,7 @@ export default function ShareElementContextProvider({
 
   const debouncedOnResizeOrScroll = useCallback(() => {
     if (timeout.current) clearTimeout(timeout.current);
-    timeout.current = setTimeout(onResizeOrScroll, TIMEOUT);
+    timeout.current = setTimeout(onResizeOrScroll, DEBOUNCE_TIMEOUT);
   }, [onResizeOrScroll]);
 
   useEffect(() => {
@@ -206,48 +153,27 @@ export default function ShareElementContextProvider({
   const endTransition = useCallback(() => {
     setSharedElements({});
     setIsTransitioning(false);
-    setTimeout(clearGhostLayer, 200);
+    setTimeout(clearGhostLayer, GHOST_LAYER_CLEAR_TIMEOUT);
   }, [clearGhostLayer]);
 
   const maybeTransition = useCallback(async () => {
-    const sharedElementsToTransition = Object.values(sharedElements).filter(
-      isSharedElementToTransition
-    );
+    const sharedElementsToTransition = Object.values(sharedElements).filter(isSharedElementToTransition);
     if (sharedElementsToTransition.length) {
-      console.log(
-        `starting transition of ${sharedElementsToTransition.length} element(s)`
-      );
+      console.log(`starting transition of ${sharedElementsToTransition.length} element(s)`);
 
-      return Promise.all(sharedElementsToTransition.map(runAnimation)).finally(
-        endTransition
-      );
+      return Promise.all(sharedElementsToTransition.map(({ animation }) => animation.finished)).finally(endTransition);
     }
 
     console.log('Found no elements to transition');
     setIsTransitioning(false);
     return Promise.resolve().then(() => setIsTransitioning(false));
-  }, [endTransition, sharedElements, runAnimation]);
-
-  /*
-   * The pathname has changed but we don't yet know whether the new route has shared elements.
-   * 0. Store the new pathname as activePathname and use the mismatch with prevPathname to:
-   *       (A) Prevent the new route from rendering
-   *       (B) Mount the shared element as its updated
-   * 1. Let the new route render its shared elements and call mountSharedElement
-   * 2. Mount the shared element then make the ghost layer mask opaque.
-   * 3. Expect to transition after the next setState stack has resolved.
-   */
-  useEffect(() => {
-    if (activePathname.current && pathname !== activePathname.current) {
-      activePathname.current = pathname;
-    }
-  }, [pathname]);
+  }, [endTransition, sharedElements]);
 
   /*
    * Transition now that the setState stack is clear
    */
   useEffect(() => {
-    if (!isTransitioning && activePathname.current !== prevPathname.current) {
+    if (!isTransitioning && pathname !== prevPathname.current) {
       maybeTransition().then(() => {
         prevPathname.current = pathname;
       });
@@ -255,20 +181,15 @@ export default function ShareElementContextProvider({
   }, [pathname, isTransitioning, maybeTransition]);
 
   const mountSharedElement = useCallback(
-    (
-      sharedElement: MountSharedElementInput,
-      pathnameOfSharedElement?: string
-    ) => {
+    (sharedElement: MountSharedElementInput, pathnameOfSharedElement: string) => {
       if (!sharedElements[sharedElement.id]) {
-        console.log('adding element');
-        addOrUpdateSharedElement(sharedElement);
-      } else if (pathnameOfSharedElement !== prevPathname.current) {
-        console.log('updating element');
+        addSharedElement(sharedElement, pathnameOfSharedElement);
+      } else if (sharedElements[sharedElement.id]?.lastSeenAtPathname !== pathnameOfSharedElement) {
+        updateSharedElement(sharedElement, pathnameOfSharedElement);
         setIsTransitioning(true);
-        addOrUpdateSharedElement(sharedElement);
       }
     },
-    [addOrUpdateSharedElement, sharedElements]
+    [addSharedElement, updateSharedElement, sharedElements]
   );
 
   return (
@@ -281,18 +202,7 @@ export default function ShareElementContextProvider({
     >
       <>
         {children}
-        <div
-          className="GhostLayer__mask"
-          style={{
-            ...GHOST_LAYER_MASK_STYLE,
-            ...(isTransitioning ? GHOST_LAYER_MASK_TRANSITIONING_STYLE : {}),
-          }}
-        />
-        <div
-          className="GhostLayer"
-          style={GHOST_LAYER_STYLE}
-          ref={ghostLayerRef}
-        />
+        <div className="GhostLayer" style={GHOST_LAYER_STYLE} ref={ghostLayerRef} />
       </>
     </SharedElementContext.Provider>
   );
