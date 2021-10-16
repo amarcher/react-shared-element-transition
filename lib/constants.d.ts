@@ -8,3 +8,7 @@ export declare const GHOST_LAYER_STYLE: {
     backgroundColor: string;
     opacity: number;
 };
+export declare const GHOST_LAYER_CLEAR_TIMEOUT = 200;
+export declare const DEBOUNCE_TIMEOUT = 100;
+export declare const DEFAULT_DURATION = 200;
+export declare const DEFAULT_ANIMATION_OPTIONS: KeyframeAnimationOptions;

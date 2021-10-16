@@ -4,10 +4,11 @@ import useSharedElementContext from './useSharedElementContext';
 type Props = {
   children: React.ReactElement;
   id: string;
-  pathname?: string;
+  pathname: string;
+  animationOptions?: KeyframeAnimationOptions;
 };
 
-export default function SharedElement({ children, id, pathname }: Props) {
+export default function SharedElement({ children, id, pathname, animationOptions }: Props) {
   const { mountSharedElement } = useSharedElementContext();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -17,6 +18,7 @@ export default function SharedElement({ children, id, pathname }: Props) {
     if (!node) return;
 
     const sharedElement = {
+      animationOptions,
       ref: node,
       id,
     };
