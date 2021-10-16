@@ -9,6 +9,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "test": "jest",
     "prepare": "yarn build"
   },
   "repository": "https://github.com/amarcher/react-shared-element-transition",
@@ -28,7 +29,9 @@
     "react": "^17.0.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^12.1.2",
     "@types/react": "^17.0.30",
+    "jest": "^27.2.5",
     "prettier": "^2.4.1",
     "react": "^17.0.0",
     "tslint": "^6.1.3",
