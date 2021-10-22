@@ -7,9 +7,10 @@ import { render } from '@testing-library/react';
 
 import '@testing-library/jest-dom';
 
-import { getKeyFrames, getNodeForTransition } from '../src/utils';
+import { getKeyframes, getNode } from '../src/utils';
+import { DEFAULT_ANIMATION_OPTIONS } from '../src/constants';
 
-const initial = {
+const firstBoundingClientRect = {
   x: 0,
   y: 0,
   bottom: 100,
@@ -20,7 +21,7 @@ const initial = {
   width: 100,
 } as DOMRect;
 
-const final = {
+const lastBoundingClientRect = {
   x: 100,
   y: 100,
   bottom: 150,
@@ -31,44 +32,61 @@ const final = {
   width: 50,
 } as DOMRect;
 
-describe('getKeyFrames', () => {
+describe('getKeyframes', () => {
   it('returns expected key frames', () => {
-    expect(getKeyFrames(initial, final)).toEqual([
-      { transform: 'matrix(2, 0, 0, 2, -50, -50)' },
+    expect(getKeyframes({ firstBoundingClientRect, lastBoundingClientRect })).toEqual([
+      { transform: 'matrix(2, 0, 0, 2, -25, -25)' },
       { transform: 'none' },
     ]);
   });
 });
 
-describe('getNodeForTransition', () => {
-  let node: HTMLDivElement;
+describe('getNode', () => {
+  let firstNode: HTMLDivElement;
+  let lastNode: HTMLDivElement;
 
   beforeEach(() => {
-    const { getByTestId } = render(<div data-testid="test" />);
-    node = getByTestId('test') as HTMLDivElement;
-  });
-
-  it('returns a copy of the node and does not mutate the original', () => {
-    expect(getNodeForTransition(node, final)).not.toEqual(node);
-    expect(node.classList).not.toContain('SharedElement');
+    const { getByTestId } = render(
+      <>
+        <div data-testid="first" />
+        <div data-testid="last" />
+      </>
+    );
+    firstNode = getByTestId('first') as HTMLDivElement;
+    lastNode = getByTestId('first') as HTMLDivElement;
   });
 
   it('returns a node with the SharedElement class name', () => {
-    expect(getNodeForTransition(node, final).classList).toContain('SharedElement');
+    expect(
+      getNode({
+        firstBoundingClientRect,
+        firstNode,
+        lastBoundingClientRect,
+        lastNode,
+        animationOptions: DEFAULT_ANIMATION_OPTIONS,
+      }).classList
+    ).toContain('SharedElement');
   });
 
   it('returns a node styled as expected', () => {
-    expect(getNodeForTransition(node, final).style).toEqual(
+    expect(
+      getNode({
+        firstBoundingClientRect,
+        firstNode,
+        lastBoundingClientRect,
+        lastNode,
+        animationOptions: DEFAULT_ANIMATION_OPTIONS,
+      }).style
+    ).toEqual(
       expect.objectContaining({
         position: 'fixed',
         contain: 'strict',
         willChange: 'transform',
-        animationFillMode: 'both',
-        top: `${final.top}px`,
-        left: `${final.left}px`,
-        height: `${final.height}px`,
-        width: `${final.width}px`,
-        transformOrigin: 'top left',
+        top: `${lastBoundingClientRect.top}px`,
+        left: `${lastBoundingClientRect.left}px`,
+        height: `${lastBoundingClientRect.height}px`,
+        width: `${lastBoundingClientRect.width}px`,
+        transformOrigin: 'center center',
       })
     );
   });
