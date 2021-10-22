@@ -138,7 +138,7 @@ For your convenience, `react-shared-element-transition` exports several "built i
 
 ### Crossfading
 
-![Sample](https://github.com/amarcher/react-shared-element-transition/blob/master/crossfade.gif?raw=true)
+![Crossfade example](https://github.com/amarcher/react-shared-element-transition/blob/master/crossfade.gif?raw=true)
 
 The `getCrossfadeNode` function can be used to ramp the `opacity` of the exiting node from `1` -> `0` and that of the entering node from `0` -> `1`) to give the appearnace that the exiting element "fades" into the entering one.
 
@@ -152,7 +152,7 @@ import { SharedElement, getCrossfadeNode } from 'react-shared-element-transition
 
 ### Flipping
 
-![Sample](https://github.com/amarcher/react-shared-element-transition/blob/master/flip.gif?raw=true)
+![Flip example](https://github.com/amarcher/react-shared-element-transition/blob/master/flip.gif?raw=true)
 
 The `getFlipNode` and `getFlipKeyframes` functions can be used in combination to adhere the entering node to the back-face of the exiting node and rotate the node around the Y-axis so that the exiting element appears to "flip" to reveal the entering node that was on its opposite side.
 
