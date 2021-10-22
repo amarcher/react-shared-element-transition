@@ -1,39 +1,16 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-
+import type {
+  MountSharedElementInput,
+  SharedElement,
+  SharedElementToTransition,
+  SharedElementContextType,
+} from './types';
 import { GHOST_LAYER_STYLE, DEFAULT_ANIMATION_OPTIONS, GHOST_LAYER_CLEAR_TIMEOUT, DEBOUNCE_TIMEOUT } from './constants';
-import { getKeyFrames, getNodeForTransition } from './utils';
+import { getKeyframes as getDefaultKeyframes, getNode as getDefaultNode } from './utils';
 
 type Props = {
   children: React.ReactElement;
   pathname: string;
-};
-
-export interface MountSharedElementInput {
-  id: string;
-  ref: HTMLDivElement;
-  animationOptions?: KeyframeAnimationOptions;
-}
-
-export interface SharedElement {
-  id: string;
-  node?: HTMLDivElement;
-  firstBoundingClientRect?: DOMRect;
-  lastBoundingClientRect?: DOMRect;
-  animation?: Animation;
-  lastSeenAtPathname?: string;
-}
-
-export interface SharedElementToTransition extends SharedElement {
-  node: HTMLDivElement;
-  firstBoundingClientRect: DOMRect;
-  lastBoundingClientRect: DOMRect;
-  animation: Animation;
-}
-
-export type SharedElementContextType = {
-  mountSharedElement: (sharedElement: MountSharedElementInput, pathname: string) => void;
-  activePathname?: string;
-  isTransitioning: boolean;
 };
 
 export const SharedElementContext = React.createContext<SharedElementContextType>({
@@ -76,13 +53,33 @@ export default function ShareElementContextProvider({ children, pathname }: Prop
   }, [ghostLayerRef]);
 
   const updateSharedElement = useCallback(
-    ({ id, ref, animationOptions }: MountSharedElementInput, lastSeenAtPathname: string) => {
+    (
+      {
+        id,
+        ref,
+        animationOptions: providedAnimationOptions,
+        getNode = getDefaultNode,
+        getKeyframes = getDefaultKeyframes,
+      }: MountSharedElementInput,
+      lastSeenAtPathname: string
+    ) => {
+      const animationOptions = { ...DEFAULT_ANIMATION_OPTIONS, ...providedAnimationOptions };
       setSharedElements((prevSharedElements) => {
         const lastBoundingClientRect = ref.getBoundingClientRect();
-        const node = getNodeForTransition(ref, lastBoundingClientRect);
+        const getNodeInput = {
+          firstNode: prevSharedElements[id].node!.cloneNode(true) as HTMLDivElement,
+          lastNode: ref.cloneNode(true) as HTMLDivElement,
+          firstBoundingClientRect: prevSharedElements[id].firstBoundingClientRect!,
+          lastBoundingClientRect,
+          animationOptions,
+        };
+        const node = getNode(getNodeInput);
         const animation = node.animate(
-          getKeyFrames(prevSharedElements[id].firstBoundingClientRect!, lastBoundingClientRect),
-          { ...DEFAULT_ANIMATION_OPTIONS, ...animationOptions }
+          getKeyframes({
+            firstBoundingClientRect: prevSharedElements[id].firstBoundingClientRect!,
+            lastBoundingClientRect,
+          }),
+          animationOptions
         );
         if (ghostLayerRef.current) {
           ghostLayerRef.current.appendChild(node);
@@ -159,12 +156,9 @@ export default function ShareElementContextProvider({ children, pathname }: Prop
   const maybeTransition = useCallback(async () => {
     const sharedElementsToTransition = Object.values(sharedElements).filter(isSharedElementToTransition);
     if (sharedElementsToTransition.length) {
-      console.log(`starting transition of ${sharedElementsToTransition.length} element(s)`);
-
       return Promise.all(sharedElementsToTransition.map(({ animation }) => animation.finished)).finally(endTransition);
     }
 
-    console.log('Found no elements to transition');
     setIsTransitioning(false);
     return Promise.resolve().then(() => setIsTransitioning(false));
   }, [endTransition, sharedElements]);

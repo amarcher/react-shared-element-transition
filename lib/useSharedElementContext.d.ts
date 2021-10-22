@@ -1,1 +1,1 @@
-export default function useSharedElementContext(): import("./SharedElementContextProvider").SharedElementContextType;
+export default function useSharedElementContext(): import("./types").SharedElementContextType;
